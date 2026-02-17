@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  # 后端 API 服务
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: hongbao-server
+    restart: unless-stopped
+    ports:
+      - "5501:5001"
+    volumes:
+      - server-data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=5001
+      - DATABASE_URL=file:/app/data/hongbao.db
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # 前端 Nginx 服务
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: hongbao-client
+    restart: unless-stopped
+    ports:
+      - "8803:80"
+    depends_on:
+      server:
+        condition: service_healthy
+
+volumes:
+  server-data:
+    driver: local

@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  nickname  String   @unique
+  password  String   @default("")
+  balance   Float    @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  sentEnvelopes RedEnvelope[] @relation("sender")
+  claims        Claim[]
+  transactions  Transaction[]
+
+  @@map("users")
+}
+
+model RedEnvelope {
+  id          String   @id @default(uuid())
+  senderId    String   @map("sender_id")
+  amount      Float    // 总金额
+  totalCount  Int      @default(1) @map("total_count") // 红包个数
+  claimedCount Int     @default(0) @map("claimed_count") // 已领取个数
+  bookName    String   @map("book_name")
+  bookExcerpt String   @map("book_excerpt")
+  answer      String
+  morseCode   String   @map("morse_code")
+  status      String   @default("pending") // pending | claimed | expired
+  createdAt   DateTime @default(now()) @map("created_at")
+  expiresAt   DateTime @map("expires_at")
+
+  sender       User          @relation("sender", fields: [senderId], references: [id])
+  claims       Claim[]
+  transactions Transaction[]
+
+  @@map("red_envelopes")
+}
+
+model Claim {
+  id         String   @id @default(uuid())
+  envelopeId String   @map("envelope_id")
+  claimerId  String   @map("claimer_id")
+  amount     Float    // 领取到的金额（随机分配）
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  envelope   RedEnvelope @relation(fields: [envelopeId], references: [id])
+  claimer    User        @relation(fields: [claimerId], references: [id])
+
+  @@map("claims")
+}
+
+model Transaction {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  type       String   // send | receive | recharge
+  amount     Float
+  envelopeId String?  @map("envelope_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User         @relation(fields: [userId], references: [id])
+  envelope   RedEnvelope? @relation(fields: [envelopeId], references: [id])
+
+  @@map("transactions")
+}
