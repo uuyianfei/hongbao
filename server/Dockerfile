@@ -1,5 +1,7 @@
 FROM node:20-alpine AS builder
 
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
@@ -11,6 +13,8 @@ RUN npx tsc
 
 # --- Production ---
 FROM node:20-alpine
+
+RUN apk add --no-cache openssl wget
 
 WORKDIR /app
 
